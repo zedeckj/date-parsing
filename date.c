@@ -17,64 +17,79 @@
     December: 31 days
 */
 
-const char *validate(int year, int month, int day) {
-	if (year < 1) return "Year must be positive";
-	if (month < 1) return "Month must be positive";
-	if (day < 1) return "Day must be positive";
-	if (month > 12) return "Month cannot be greater than 12";
+const char *validate(int year, int month, int day, bool known_y, bool known_m, bool known_d) {
+	if (known_y && year < 1) return "Year must be positive";
+	if (known_m && month < 1) return "Month must be positive";
+	if (known_d && day < 1) return "Day must be positive";
+	if (known_m && month > 12) return "Month cannot be greater than 12";	
 	static const int max_days[12] = {31, 0, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 	int max;
-	if (month == 2) {	
-		if (!(year % 400) || (!(year % 4) && year % 100)) max = 29;
-		else max = 28;
-		if (day > max) return INVALID_FOR("February");
-	}
-	else {
-		max = max_days[month - 1];
-		if (day > max) {
-			switch (month) {
-				case 1:
-				return INVALID_FOR("January");
-				case 3:
-				return INVALID_FOR("March");
-				case 4:
-				return INVALID_FOR("April");
-				case 5:
-				return INVALID_FOR("May");
-				case 6:
-				return INVALID_FOR("June");
-				case 7:
-				return INVALID_FOR("July");
-				case 8:
-				return INVALID_FOR("August");
-				case 9:
-				return INVALID_FOR("September");
-				case 10:
-				return INVALID_FOR("October");
-				case 11:
-				return INVALID_FOR("November");
-				case 12:
-				return INVALID_FOR("December");
-			}
-		}	
+	if (known_d) {
+		if (!known_m) {
+			if (day > 31) return INVALID_FOR("any month");
+		}
+		else if (month == 2) {	
+			if (!known_y || !(year % 400) || (!(year % 4) && year % 100)) max = 29;
+			else max = 28;
+			if (day > max) return INVALID_FOR("February");
+		}
+		else {
+			max = max_days[month - 1];
+			if (day > max) {
+				switch (month) {
+					case 1:
+					return INVALID_FOR("January");
+					case 3:
+					return INVALID_FOR("March");
+					case 4:
+					return INVALID_FOR("April");
+					case 5:
+					return INVALID_FOR("May");
+					case 6:
+					return INVALID_FOR("June");
+					case 7:
+					return INVALID_FOR("July");
+					case 8:
+					return INVALID_FOR("August");
+					case 9:
+					return INVALID_FOR("September");
+					case 10:
+					return INVALID_FOR("October");
+					case 11:
+					return INVALID_FOR("November");
+					case 12:
+					return INVALID_FOR("December");
+				}
+			}	
+		}
 	}
 	return 0;
 }
 
 const char *parse_split(date_t *dst, char *ystr, char *mstr, char *dstr) {
-	int year;
-	int month; 
-	int day;
-	if (!sscanf(ystr, "%d", &year)) return "Year is not a number";
-	if (!sscanf(mstr, "%d", &month)) return "Month is not a number";
-	if (!sscanf(dstr, "%d", &day)) return "Day is not a number";
-	const char *err = validate(year, month, day);
+	int year = 0;
+	int month = 0; 
+	int day = 0;
+	bool known_y = true;
+	bool known_m = true;
+	bool known_d = true;
+	if (!strcmp(ystr, "????")) known_y = false;
+	else if (!sscanf(ystr, "%d", &year)) return "Year is not a number";
+	if (!strcmp(mstr, "??")) known_m = false;
+	else if (!sscanf(mstr, "%d", &month)) return "Month is not a number";
+	if (!strcmp(dstr, "??")) known_d = false;
+	else if (!sscanf(dstr, "%d", &day)) return "Day is not a number";
+	const char *err = validate(year, month, day, known_y, known_m, known_d);
 	if (err) return err;
 	dst->year = year;
 	dst->month = month;
 	dst->day = day;
+	dst->known_year = known_y;
+	dst->known_month = known_m;
+	dst->known_day = known_d;
 	return 0;
 }
+
 
 const char *parse_date(date_t *dst, char *in_str, char sep) {
 	if (!in_str) return "No date specified";

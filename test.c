@@ -24,7 +24,9 @@ void test_eq(char * date_str, int year, int month, int day) {
 		fprintf(stderr, "Invalid date %s: %s\n", date_str, err);
 		exit(1);
 	}
-	if (date.year != year || date.month != month || date.day != day) {
+	if (year != -1 && date.year != year || 
+			month != -1 && date.month != month || 
+			day != -1 && date.day != day) {
 		fprintf(stderr, "Date %d.%d.%d does not match expected %d.%d.%d\n", 
 				date.year,
 				date.month,
@@ -34,11 +36,40 @@ void test_eq(char * date_str, int year, int month, int day) {
 				day);
 		exit(1);
 	}
+	if (year == -1 && date.known_year) {
+		fprintf(stderr, "Date %d.%d.%d should have unknown year",
+				date.year,
+				date.month,
+				date.day);
+		exit(1);
+	}	
+	if (month == -1 && date.known_month) {
+		fprintf(stderr, "Date %d.%d.%d should have unknown year",
+				date.year,
+				date.month,
+				date.day);
+		exit(1);
+	}	
+	if (day == -1 && date.known_day) {
+		fprintf(stderr, "Date %d.%d.%d should have unknown day",
+				date.year,
+				date.month,
+				date.day);
+		exit(1);
+	}
+	
 	tests += 1;
 	return;
 }
 
-
+void test_basic_unk() {
+	test_eq("????.12.01", -1, 12, 1);
+	test_eq("0001.??.12", 1, -1, 12);
+	test_eq("2020.06.??", 2020, 6, -1);
+	test_eq("2000.??.??", 2000, -1, -1);
+	test_eq("????.??.16", -1, -1, 16);
+	test_eq("????.02.??", -1, 2, -1);
+}
 
 
 void test_basic(){
@@ -66,6 +97,23 @@ void test_limits() {
 	test_eq("2000.12.31", 2000, 12, 31);
 }
 
+
+void test_limits_unk() {
+	test_eq("????.01.31", -1, 1, 31);
+	test_eq("????.03.31", -1, 3, 31);
+	test_eq("????.04.30", -1, 4, 30);
+	test_eq("????.05.31", -1, 5, 31);
+	test_eq("????.06.30", -1, 6, 30);
+	test_eq("????.07.31", -1, 7, 31);
+	test_eq("????.08.31", -1, 8, 31);
+	test_eq("????.09.30", -1, 9, 30);
+	test_eq("????.10.31", -1, 10, 31);
+	test_eq("????.11.30", -1, 11, 30);
+	test_eq("????.12.31", -1, 12, 31);
+}
+
+
+
 #define INVALID_FOR(month) "Day is invalid for " month
 
 void test_limit_errors() {
@@ -83,13 +131,33 @@ void test_limit_errors() {
 	test_err("2020.12.32", INVALID_FOR("December"));
 }
 
+
+void test_limit_err_unk() {
+	test_err("????.01.32", INVALID_FOR("January"));
+	test_err("????.02.30", INVALID_FOR("February"));
+	test_err("????.03.32", INVALID_FOR("March"));
+	test_err("????.04.31", INVALID_FOR("April"));
+	test_err("????.05.32", INVALID_FOR("May"));
+	test_err("????.06.31", INVALID_FOR("June"));
+	test_err("????.07.32", INVALID_FOR("July"));
+	test_err("????.08.32", INVALID_FOR("August"));
+	test_err("????.09.31", INVALID_FOR("September"));
+	test_err("????.10.32", INVALID_FOR("October"));
+	test_err("????.11.31", INVALID_FOR("November"));
+	test_err("????.12.32", INVALID_FOR("December"));
+}
+
+
 void feb_date(char *buffer, int year, int day) {
 	memset(buffer, ' ', 10);
+	if (year == -1)
+	sprintf(buffer, "????.02.%d", day);
+	else
 	sprintf(buffer, "%d.02.%d", year, day);
 }
 
 void test_leap_years() {
-	int leap_years[] = {1600, 1804, 1808, 1948, 2000, 2004, 0}; 
+	int leap_years[] = {1600, 1804, 1808, 1948, 2000, 2004, -1, 0}; 
 	int non_leap[] = {1793, 1900, 2013, 0};
 	for (int i = 0; leap_years[i]; i++) {
 		char buf[11];
@@ -130,5 +198,8 @@ int main(int argc, char **argv) {
 	test_errors();
 	test_limit_errors();
 	test_leap_years();
+	test_basic_unk();
+	test_limits_unk();
+	test_limit_err_unk();
 	printf("All %d tests passed\n", tests); 
 }

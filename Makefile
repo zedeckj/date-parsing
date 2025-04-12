@@ -1,2 +1,2 @@
 all:
-	cc *.c -o test
+	cc -W *.c -o test

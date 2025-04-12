@@ -192,7 +192,7 @@ void test_errors() {
 }
 
 
-int main(int argc, char **argv) {
+int main() {
 	test_basic();
 	test_limits();
 	test_errors();
